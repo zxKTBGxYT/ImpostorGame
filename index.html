@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impostor Word - Automated Gamer Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0b0f19; color: #f8fafc; }
+        .glow-box { box-shadow: 0 0 25px rgba(99, 102, 241, 0.15); }
+        .glow-active { box-shadow: 0 0 35px rgba(16, 185, 129, 0.3); }
+        .glow-rose { box-shadow: 0 0 35px rgba(244, 63, 94, 0.3); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
+
+    <!-- Main Container -->
+    <div class="w-full max-w-lg bg-[#111827] rounded-3xl border border-slate-800 p-6 sm:p-8 glow-box transition-all duration-300">
+        
+        <!-- Header -->
+        <div class="text-center mb-6">
+            <span class="text-xs uppercase tracking-widest px-3 py-1 bg-indigo-500/10 text-indigo-400 rounded-full font-bold border border-indigo-500/20">Voice Call Automated</span>
+            <h1 class="text-3xl font-extrabold mt-3 bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">IMPOSTOR WORD</h1>
+            <p class="text-xs text-slate-400 mt-1">15s Automated Turns • 5 Rounds • Voting Phase</p>
+        </div>
+
+        <!-- VIEW 1: LOBBY / SETUP -->
+        <div id="view-lobby" class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Your Gamer Tag</label>
+                <input type="text" id="input-name" placeholder="e.g. ShadowSniper" maxlength="15" class="w-full px-4 py-3.5 rounded-xl bg-slate-900 border border-slate-700 focus:outline-none focus:border-indigo-500 text-white font-medium">
+            </div>
+            
+            <div class="pt-2 space-y-3">
+                <button onclick="createRoom()" class="w-full py-4 px-4 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition transform active:scale-[0.98]">Create Room</button>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="input-room-code" placeholder="CODE" maxlength="4" class="w-1/3 px-4 py-3.5 rounded-xl bg-slate-900 border border-slate-700 uppercase text-center tracking-widest font-extrabold text-indigo-400 focus:outline-none focus:border-indigo-500">
+                    <button onclick="joinRoom()" class="w-2/3 py-3.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl border border-slate-700 transition">Join Room</button>
+                </div>
+            </div>
+            <p id="lobby-error" class="text-xs text-rose-400 text-center font-medium mt-2"></p>
+        </div>
+
+        <!-- VIEW 2: WAITING ROOM -->
+        <div id="view-waiting" class="hidden space-y-5">
+            <div class="bg-slate-900/80 p-5 rounded-2xl text-center border border-slate-800">
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">Room Passcode</span>
+                <h2 id="display-room-code" class="text-4xl font-black tracking-widest text-indigo-400 mt-1">----</h2>
+            </div>
+            
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Squad in Lobby (<span id="player-count">0</span>)</h3>
+                <ul id="player-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <!-- Dynamic player items -->
+                </ul>
+            </div>
+
+            <div id="host-controls" class="pt-2 hidden">
+                <button onclick="startGame()" class="w-full py-4 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition">Start Match 🚀</button>
+            </div>
+            <div id="guest-waiting" class="text-center text-xs text-slate-400 py-3 font-medium animate-pulse">
+                Waiting for host to start the match...
+            </div>
+            <button onclick="leaveRoom()" class="w-full py-2 text-xs text-rose-400 hover:text-rose-300 font-semibold transition mt-2">Leave Room</button>
+        </div>
+
+        <!-- VIEW 3: ACTIVE GAME (SECRET + 15S AUTOMATED TURNS) -->
+        <div id="view-game" class="hidden space-y-5">
+            <!-- Secret Word Dossier Box -->
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-center">
+                <span class="text-[10px] uppercase font-bold tracking-widest text-indigo-400">Your Secret Assignment</span>
+                <div class="mt-2 p-3 bg-slate-950 rounded-xl border border-slate-800">
+                    <h3 id="my-secret-word" class="text-xl font-black text-emerald-400 uppercase tracking-wide">---</h3>
+                </div>
+            </div>
+
+            <!-- Top Status Bar -->
+            <div class="flex justify-between items-center bg-slate-900 px-4 py-3 rounded-xl border border-slate-800 text-xs font-bold">
+                <span class="text-indigo-400 uppercase tracking-wider">Round <span id="current-round">1</span> / 5</span>
+                <span id="game-status-indicator" class="text-amber-400 animate-pulse font-bold">Match Live</span>
+            </div>
+
+            <!-- AUTOMATED TURN BANNER -->
+            <div id="turn-banner" class="p-5 rounded-2xl bg-slate-900 border-2 border-slate-800 text-center transition-all duration-300">
+                <span id="turn-subtitle" class="text-xs font-bold uppercase tracking-widest text-slate-400">Current Speaker</span>
+                <h2 id="active-speaker-name" class="text-2xl font-black text-white mt-1">---</h2>
+            </div>
+
+            <!-- 15s Timer Box -->
+            <div class="text-center py-5 bg-slate-900/60 rounded-2xl border border-slate-800 relative overflow-hidden">
+                <span id="timer-label" class="text-xs font-bold text-slate-400 uppercase tracking-widest">Turn Countdown</span>
+                <div id="timer-display" class="text-5xl font-black text-indigo-400 my-2 tracking-tight">15s</div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: VOTING PHASE -->
+        <div id="view-voting" class="hidden space-y-5">
+            <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 text-center">
+                <h2 class="text-xl font-black text-rose-400 uppercase tracking-wider">Voting Phase</h2>
+                <p class="text-xs text-slate-400 mt-1">Who do you think is the Impostor? Vote below!</p>
+            </div>
+            
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Select Suspect:</h3>
+                <div id="voting-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    <!-- Dynamic vote options -->
+                </div>
+            </div>
+            <div id="vote-status-msg" class="text-center text-xs text-indigo-400 font-semibold py-2"></div>
+        </div>
+
+        <!-- VIEW 5: RESULTS & REMATCH LOBBY -->
+        <div id="view-gameover" class="hidden space-y-5 text-center">
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                <h2 id="winner-announcement" class="text-2xl font-black uppercase tracking-wider text-emerald-400">Crewmates Win!</h2>
+                <p id="winner-sub" class="text-xs text-slate-400 mt-1">Majority correctly voted the Impostor.</p>
+                <div class="mt-4 p-5 bg-slate-950 rounded-xl border border-slate-800 space-y-3">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase">The Impostor Was</span>
+                        <h3 id="impostor-reveal-name" class="text-xl font-black text-rose-400 mt-0.5">---</h3>
+                    </div>
+                    <div class="pt-2 border-t border-slate-900">
+                        <span class="text-xs font-bold text-slate-400 uppercase">Common Secret Word</span>
+                        <h3 id="common-word-reveal" class="text-lg font-bold text-emerald-400 mt-0.5">---</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Host Rematch Control -->
+            <div id="host-rematch-controls" class="hidden">
+                <button onclick="startNextMatch()" class="w-full py-4 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition">Start Another Match 🎮</button>
+            </div>
+            <div id="guest-rematch-waiting" class="text-xs text-slate-400 font-medium py-2 animate-pulse">
+                Waiting for host to start another match...
+            </div>
+            <button onclick="leaveRoom()" class="w-full py-2 text-xs text-rose-400 hover:text-rose-300 font-semibold transition mt-2">Leave Room</button>
+        </div>
+
+    </div>
+
+    <!-- Firebase Script & Automated Turn Engine -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AiZaSyDy9vBlfWZlm6uycDZeSB-C5-AJdyib2Po",
+            authDomain: "rentpulse-426fe.firebaseapp.com",
+            projectId: "rentpulse-426fe",
+            storageBucket: "rentpulse-426fe.firebasestorage.app",
+            messagingSenderId: "1058814034249",
+            appId: "1:1058814034249:web:a4dff1b87113cbd30a1a98",
+            measurementId: "G-PB2EE1P86E"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        const SINGLE_WORDS = ["Apple", "Guitar", "Ocean", "Mountain", "Coffee", "Airplane", "Sunset", "Tiger", "Laptop", "Cinema", "Bicycle", "Castle", "Telescope", "Volcano", "Symphony"];
+
+        let currentRoomCode = null;
+        let myName = null;
+        let isHost = false;
+        let unsubscribeRoom = null;
+        let clientTimerInterval = null;
+        let hasVoted = false;
+
+        window.createRoom = async function() {
+            myName = document.getElementById("input-name").value.trim();
+            if (!myName) { showError("Enter your gamer tag first."); return; }
+
+            currentRoomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+            isHost = true;
+
+            const roomData = {
+                host: myName,
+                status: "waiting",
+                players: [{ name: myName, isImpostor: false, secretWord: "" }],
+                currentRound: 1,
+                turnIndex: 0,
+                commonWord: "",
+                impostorName: "",
+                turnEndTime: null,
+                isCooldown: false,
+                votes: {}
+            };
+
+            try {
+                await setDoc(doc(db, "rooms", currentRoomCode), roomData);
+                attachRoomListener();
+                showView("view-waiting");
+                document.getElementById("display-room-code").innerText = currentRoomCode;
+                document.getElementById("host-controls").classList.remove("hidden");
+                document.getElementById("guest-waiting").classList.add("hidden");
+            } catch (err) {
+                showError("Error connecting to database.");
+            }
+        };
+
+        window.joinRoom = async function() {
+            myName = document.getElementById("input-name").value.trim();
+            const code = document.getElementById("input-room-code").value.trim().toUpperCase();
+            if (!myName || !code) { showError("Enter name and 4-letter code."); return; }
+
+            const roomRef = doc(db, "rooms", code);
+            const snap = await getDoc(roomRef);
+
+            if (!snap.exists()) { showError("Room not found."); return; }
+
+            const data = snap.data();
+            if (data.status !== "waiting" && data.status !== "ended") { showError("Match already in progress."); return; }
+            if (data.players.some(p => p.name === myName)) { showError("Name already taken in this room."); return; }
+
+            data.players.push({ name: myName, isImpostor: false, secretWord: "" });
+            await updateDoc(roomRef, { players: data.players });
+
+            currentRoomCode = code;
+            isHost = false;
+            attachRoomListener();
+            showView("view-waiting");
+            document.getElementById("display-room-code").innerText = currentRoomCode;
+        };
+
+        window.startGame = async function() {
+            const roomRef = doc(db, "rooms", currentRoomCode);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const data = snap.data();
+
+            if (data.players.length < 2) {
+                alert("Need at least 2 players in lobby.");
+                return;
+            }
+
+            setupNewMatchData(data, roomRef);
+        };
+
+        window.startNextMatch = async function() {
+            const roomRef = doc(db, "rooms", currentRoomCode);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const data = snap.data();
+
+            setupNewMatchData(data, roomRef);
+        };
+
+        async function setupNewMatchData(data, roomRef) {
+            const commonWord = SINGLE_WORDS[Math.floor(Math.random() * SINGLE_WORDS.length)];
+            const impostorIdx = Math.floor(Math.random() * data.players.length);
+
+            data.players.forEach((p, idx) => {
+                if (idx === impostorIdx) {
+                    p.isImpostor = true;
+                    p.secretWord = "🤫 IMPOSTOR (Blend In!)";
+                } else {
+                    p.isImpostor = false;
+                    p.secretWord = commonWord;
+                }
+            });
+
+            // Start 5-second initial cooldown before Round 1 Player 1
+            const firstTurnEnd = Date.now() + 5000;
+
+            await updateDoc(roomRef, {
+                status: "playing",
+                commonWord: commonWord,
+                impostorName: data.players[impostorIdx].name,
+                players: data.players,
+                currentRound: 1,
+                turnIndex: 0,
+                turnEndTime: firstTurnEnd,
+                isCooldown: true,
+                votes: {}
+            });
+            hasVoted = false;
+        }
+
+        // Automated Host Engine loop to advance turns / rounds / voting
+        async function runAutomatedHostTicker() {
+            if (!isHost) return;
+            const roomRef = doc(db, "rooms", currentRoomCode);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const data = snap.data();
+
+            if (data.status !== "playing" || !data.turnEndTime) return;
+
+            const now = Date.now();
+            if (now >= data.turnEndTime) {
+                if (data.isCooldown) {
+                    // Cooldown finished -> start 15s turn for current player
+                    const turnEnd = now + 15000;
+                    await updateDoc(roomRef, {
+                        turnEndTime: turnEnd,
+                        isCooldown: false
+                    });
+                } else {
+                    // 15s turn finished -> Move to next player or next round
+                    let nextTurn = data.turnIndex + 1;
+                    let nextRound = data.currentRound;
+
+                    if (nextTurn >= data.players.length) {
+                        nextTurn = 0;
+                        nextRound++;
+                    }
+
+                    if (nextRound > 5) {
+                        // Finished 5 rounds -> switch to voting phase
+                        await updateDoc(roomRef, {
+                            status: "voting",
+                            turnEndTime: null
+                        });
+                    } else {
+                        // Enter 5-second cooldown for next player
+                        const cooldownEnd = now + 5000;
+                        await updateDoc(roomRef, {
+                            turnIndex: nextTurn,
+                            currentRound: nextRound,
+                            turnEndTime: cooldownEnd,
+                            isCooldown: true
+                        });
+                    }
+                }
+            }
+        }
+
+        setInterval(() => {
+            if (isHost && currentRoomCode) {
+                runAutomatedHostTicker();
+            }
+        }, 1000);
+
+        window.submitVote = async function(suspectName) {
+            if (hasVoted) return;
+            hasVoted = true;
+
+            const roomRef = doc(db, "rooms", currentRoomCode);
+            const snap = await getDoc(roomRef);
+            if (!snap.exists()) return;
+            const data = snap.data();
+
+            const votes = data.votes || {};
+            votes[myName] = suspectName;
+
+            await updateDoc(roomRef, { votes: votes });
+            document.getElementById("vote-status-msg.innerText") = "Vote submitted! Waiting for other players...";
+
+            // Check if everyone voted
+            if (Object.keys(votes).length >= data.players.length) {
+                // Tally votes
+                let tally = {};
+                Object.values(votes).forEach(suspect => {
+                    tally[suspect] = (tally[suspect] || 0) + 1;
+                });
+
+                let mostVoted = "";
+                let maxVotes = -1;
+                for (let [suspect, count] of Object.entries(tally)) {
+                    if (count > maxVotes) {
+                        maxVotes = count;
+                        mostVoted = suspect;
+                    }
+                }
+
+                const crewmatesWin = (mostVoted === data.impostorName);
+                await updateDoc(roomRef, {
+                    status: "ended",
+                    winner: crewmatesWin ? "crewmates" : "impostor",
+                    votedImpostor: mostVoted
+                });
+            }
+        };
+
+        window.endAndCleanupRoom = async function() {
+            if (currentRoomCode) {
+                try { await deleteDoc(doc(db, "rooms", currentRoomCode)); } catch (e) {}
+            }
+            location.reload();
+        };
+
+        window.leaveRoom = function() {
+            location.reload();
+        };
+
+        function attachRoomListener() {
+            if (unsubscribeRoom) unsubscribeRoom();
+            const roomRef = doc(db, "rooms", currentRoomCode);
+            unsubscribeRoom = onSnapshot(roomRef, (docSnap) => {
+                if (!docSnap.exists()) return;
+                const data = docSnap.data();
+
+                // Lobby player list update
+                const listEl = document.getElementById("player-list");
+                listEl.innerHTML = "";
+                data.players.forEach(p => {
+                    const li = document.createElement("li");
+                    li.className = "px-3.5 py-2.5 bg-slate-900 rounded-xl text-xs font-semibold flex justify-between items-center border border-slate-800 text-slate-300";
+                    li.innerHTML = `<span>${p.name}</span> ${p.name === data.host ? '<span class="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded font-bold">HOST</span>' : ''}`;
+                    listEl.appendChild(li);
+                });
+                document.getElementById("player-count").innerText = data.players.length;
+
+                // Playing View
+                if (data.status === "playing") {
+                    showView("view-game");
+                    document.getElementById("current-round").innerText = data.currentRound;
+
+                    const me = data.players.find(p => p.name === myName);
+                    if (me) document.getElementById("my-secret-word").innerText = me.secretWord;
+
+                    const activePlayer = data.players[data.turnIndex];
+                    if (activePlayer) {
+                        const speakerNameEl = document.getElementById("active-speaker-name");
+                        const turnBanner = document.getElementById("turn-banner");
+                        const subtitle = document.getElementById("turn-subtitle");
+                        const statusIndicator = document.getElementById("game-status-indicator");
+
+                        if (data.isCooldown) {
+                            statusIndicator.innerText = "Next Turn Starting Soon...";
+                            speakerNameEl.innerText = activePlayer.name;
+                            subtitle.innerText = "Up Next";
+                            turnBanner.className = "p-5 rounded-2xl bg-amber-950/40 border-2 border-amber-500/50 text-center transition-all duration-300";
+                        } else {
+                            statusIndicator.innerText = "Match Live 🎙️";
+                            speakerNameEl.innerText = activePlayer.name;
+
+                            if (activePlayer.name === myName) {
+                                turnBanner.className = "p-5 rounded-2xl bg-emerald-950/80 border-2 border-emerald-500 text-center glow-active transition-all duration-300";
+                                subtitle.className = "text-xs font-black uppercase tracking-widest text-emerald-400 animate-bounce";
+                                subtitle.innerText = "🚨 IT IS YOUR TURN TO SPEAK! 🚨";
+                            } else {
+                                turnBanner.className = "p-5 rounded-2xl bg-slate-900 border-2 border-slate-800 text-center transition-all duration-300";
+                                subtitle.className = "text-xs font-bold uppercase tracking-widest text-slate-400";
+                                subtitle.innerText = "Current Speaker";
+                            }
+                        }
+                    }
+
+                    if (data.turnEndTime) {
+                        syncCountdown(data.turnEndTime, data.isCooldown);
+                    }
+                }
+
+                // Voting View
+                if (data.status === "voting") {
+                    showView("view-voting");
+                    const voteListEl = document.getElementById("voting-list");
+                    voteListEl.innerHTML = "";
+                    data.players.forEach(p => {
+                        const btn = document.createElement("button");
+                        btn.className = "w-full py-3 px-4 bg-slate-900 hover:bg-indigo-900/50 text-slate-200 font-bold rounded-xl border border-slate-800 transition text-left flex justify-between items-center";
+                        btn.innerHTML = `<span>${p.name}</span> <span class="text-xs text-indigo-400">Vote ➔</span>`;
+                        btn.onclick = () => submitVote(p.name);
+                        voteListEl.appendChild(btn);
+                    });
+                }
+
+                // Game Over / Results View
+                if (data.status === "ended") {
+                    showView("view-gameover");
+                    document.getElementById("imposter-reveal-name").innerText = data.impostorName;
+                    document.getElementById("common-word-reveal").innerText = data.commonWord;
+
+                    const winnerEl = document.getElementById("winner-announcement");
+                    const subEl = document.getElementById("winner-sub");
+
+                    if (data.winner === "crewmates") {
+                        winnerEl.innerText = "Crewmates Win! 🎉";
+                        winnerEl.className = "text-2xl font-black uppercase tracking-wider text-emerald-400";
+                        subEl.innerText = `Majority voted ${data.votedImpostor}, which was the Impostor!`;
+                    } else {
+                        winnerEl.innerText = "Impostor Wins! 🤫";
+                        winnerEl.className = "text-2xl font-black uppercase tracking-wider text-rose-500";
+                        subEl.innerText = `Town voted ${data.votedImpostor} (Crewmate). Impostor escaped!`;
+                    }
+
+                    if (isHost) {
+                        document.getElementById("host-rematch-controls").classList.remove("hidden");
+                        document.getElementById("guest-rematch-waiting").classList.add("hidden");
+                    } else {
+                        document.getElementById("host-rematch-controls").classList.add("hidden");
+                        document.getElementById("guest-rematch-waiting").classList.remove("hidden");
+                    }
+                }
+            });
+        }
+
+        function syncCountdown(targetTimestamp, isCooldown) {
+            if (clientTimerInterval) clearInterval(clientTimerInterval);
+            const display = document.getElementById("timer-display");
+            const label = document.getElementById("timer-label");
+
+            if (isCooldown) {
+                label.innerText = "Next Turn Cooldown";
+            } else {
+                label.innerText = "Turn Speaking Time";
+            }
+
+            clientTimerInterval = setInterval(() => {
+                const secondsLeft = Math.ceil((targetTimestamp - Date.now()) / 1000);
+                if (secondsLeft <= 0) {
+                    clearInterval(clientTimerInterval);
+                    display.innerText = "0s";
+                } else {
+                    display.innerText = secondsLeft + "s";
+                }
+            }, 200);
+        }
+
+        function showView(viewId) {
+            ["view-lobby", "view-waiting", "view-game", "view-voting", "view-gameover"].forEach(id => {
+                document.getElementById(id).classList.add("hidden");
+            });
+            document.getElementById(viewId).classList.remove("hidden");
+        }
+
+        function showError(msg) {
+            document.getElementById("lobby-error").innerText = msg;
+        }
+    </script>
+</body>
+</html>
