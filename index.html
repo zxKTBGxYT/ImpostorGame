@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word impostor - Peaceful Group Game</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sage: {
+                            50: '#f4f7f4',
+                            100: '#e3ebe3',
+                            200: '#ca9bca',
+                            300: '#a3c2a3',
+                            400: '#7fa67f',
+                            500: '#618a61',
+                            600: '#4a6f4a',
+                            700: '#3c583c',
+                            800: '#324732',
+                            900: '#2a3b2a',
+                        },
+                        sand: {
+                            50: '#faf8f5',
+                            100: '#f3eee6',
+                            200: '#e6dacb',
+                            300: '#d7c3ac',
+                            400: '#c6a88b',
+                            500: '#b7906d',
+                        },
+                        coral: {
+                            400: '#fb7185',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #f3eee6 0%, #e3ebe3 100%);
+            color: #2a3b2a;
+            min-height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .peaceful-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 20px 40px -15px rgba(50, 71, 50, 0.07);
+        }
+        .inner-inset {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(227, 235, 227, 0.8);
+        }
+        .gentle-shadow {
+            box-shadow: 0 10px 25px -5px rgba(97, 138, 97, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-4 sm:p-6 overflow-x-hidden">
+
+    <!-- Header Navigation -->
+    <header class="w-full max-w-2xl mx-auto py-3 px-5 peaceful-card rounded-2xl flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3 cursor-pointer" onclick="confirmResetToHome()">
+            <div class="w-9 h-9 rounded-xl bg-sage-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                🌿
+            </div>
+            <div>
+                <h1 class="font-extrabold text-base tracking-tight text-sage-900">Word Impostor</h1>
+                <p class="text-[11px] text-sage-600 font-medium">Group Call Word Game</p>
+            </div>
+        </div>
+        <div id="connectionStatus" class="hidden flex items-center gap-2 px-3 py-1.5 rounded-full bg-sage-100/80 text-xs font-semibold text-sage-800 border border-sage-200">
+            <span class="w-2 h-2 rounded-full bg-sage-500 animate-pulse"></span>
+            <span>Room: <strong id="roomCodeDisplay" class="font-mono text-sage-900 font-bold">----</strong></span>
+        </div>
+    </header>
+
+    <!-- Main Dynamic View Container -->
+    <main class="w-full max-w-xl mx-auto flex-1 flex flex-col justify-center my-auto">
+
+        <!-- Notification Banner -->
+        <div id="alertBox" class="hidden fixed top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-11/12 bg-white/95 backdrop-blur p-4 rounded-2xl border border-sand-300 shadow-xl flex items-center justify-between gap-3 animate-bounce">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-leaf text-sage-500 text-lg"></i>
+                <span id="alertMsg" class="text-xs sm:text-sm font-semibold text-sage-900">Notification message</span>
+            </div>
+            <button onclick="hideAlert()" class="text-sage-400 hover:text-sage-700 px-2 py-1"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- VIEW 1: LANDING & SETUP -->
+        <div id="viewLanding" class="space-y-6 text-center">
+            <div class="space-y-2">
+                <span class="px-3 py-1 rounded-full bg-sage-100 text-sage-700 text-xs font-bold uppercase tracking-wider">Peaceful Party Game</span>
+                <h2 class="text-3xl sm:text-4xl font-black text-sage-900 tracking-tight">Gather your friends & test your instincts</h2>
+                <p class="text-sage-700 text-xs sm:text-sm max-w-md mx-auto leading-relaxed">
+                    Everyone gets the exact same secret word except <b>1 Impostor</b>. Share clues over your WhatsApp call, finish 5 rounds, and uncover the traitor!
+                </p>
+            </div>
+
+            <div class="peaceful-card p-6 rounded-3xl space-y-5">
+                <!-- Name Input -->
+                <div class="text-left space-y-1.5">
+                    <label class="text-xs font-bold uppercase tracking-wider text-sage-700">Your Nickname</label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-sage-400"></i>
+                        <input type="text" id="playerNameInput" maxlength="15" placeholder="Enter your name..." 
+                            class="w-full bg-white/80 border border-sage-200 rounded-2xl py-3 pl-11 pr-4 text-sage-900 placeholder-sage-400 focus:outline-none focus:border-sage-500 focus:ring-2 focus:ring-sage-200 transition text-sm font-medium">
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <button onclick="showCreateRoomForm()" id="tabCreateBtn" class="py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-sage-600 hover:bg-sage-700 text-white shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Create Room
+                    </button>
+                    <button onclick="showJoinRoomForm()" id="tabJoinBtn" class="py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-white/80 hover:bg-white text-sage-700 border border-sage-200 transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-right-to-bracket"></i> Join Room
+                    </button>
+                </div>
+
+                <!-- Create Form -->
+                <div id="formCreate" class="pt-1">
+                    <button onclick="createRoom()" id="btnActionCreate" class="w-full py-3.5 rounded-2xl font-bold bg-sage-600 hover:bg-sage-700 text-white gentle-shadow transition text-sm tracking-wide">
+                        CREATE NEW ROOM
+                    </button>
+                </div>
+
+                <!-- Join Form -->
+                <div id="formJoin" class="hidden space-y-4 pt-1">
+                    <div class="text-left space-y-1.5">
+                        <label class="text-xs font-bold uppercase tracking-wider text-sage-700">4-Letter Room Code</label>
+                        <div class="relative">
+                            <i class="fa-solid fa-key absolute left-4 top-1/2 -translate-y-1/2 text-sage-400"></i>
+                            <input type="text" id="roomCodeInput" maxlength="6" placeholder="e.g. ABCD" 
+                                class="w-full bg-white/80 border border-sage-200 rounded-2xl py-3 pl-11 pr-4 uppercase text-sage-900 font-mono tracking-widest placeholder-sage-400 focus:outline-none focus:border-sage-500 focus:ring-2 focus:ring-sage-200 transition text-sm">
+                        </div>
+                    </div>
+                    <button onclick="joinRoom()" id="btnActionJoin" class="w-full py-3.5 rounded-2xl font-bold bg-sand-500 hover:bg-sand-600 text-white gentle-shadow transition text-sm tracking-wide">
+                        JOIN ROOM NOW
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: LOBBY -->
+        <div id="viewLobby" class="hidden space-y-6">
+            <div class="peaceful-card p-6 sm:p-8 rounded-3xl space-y-6 text-center">
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-sage-600 uppercase tracking-widest">Share with your WhatsApp Call Group</span>
+                    <div class="flex items-center justify-center gap-3">
+                        <span id="lobbyRoomCode" class="text-4xl font-black font-mono tracking-widest text-sage-900 bg-white/90 px-6 py-2 rounded-2xl border border-sage-200 shadow-inner">----</span>
+                        <button onclick="copyRoomCode()" class="p-3 bg-sage-100 hover:bg-sage-200 text-sage-700 rounded-2xl transition border border-sage-200" title="Copy Code">
+                            <i class="fa-solid fa-copy text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Joined Players List -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center text-xs font-bold text-sage-600 uppercase tracking-wider px-1">
+                        <span>Players Joined (<span id="playerCount">0</span>)</span>
+                        <span class="text-sage-600"><i class="fa-solid fa-phone"></i> Connected</span>
+                    </div>
+                    <div id="lobbyPlayersList" class="grid grid-cols-2 gap-2.5 max-h-56 overflow-y-auto p-1">
+                        <!-- Dynamic Player Badges -->
+                    </div>
+                </div>
+
+                <!-- Word Topic Selection (Host Only) -->
+                <div id="hostCategorySection" class="text-left space-y-2 pt-3 border-t border-sage-200">
+                    <label class="text-xs font-bold uppercase tracking-wider text-sage-700">Topic Category</label>
+                    <select id="categorySelect" class="w-full bg-white border border-sage-200 rounded-2xl px-4 py-2.5 text-sage-800 text-sm font-semibold focus:outline-none focus:border-sage-500">
+                        <option value="All">🌿 Peaceful Mix (Everyday Words)</option>
+                        <option value="Food">🍎 Food & Treats</option>
+                        <option value="Places">🌍 Places & Nature</option>
+                        <option value="Objects">🎸 Objects & Things</option>
+                        <option value="Animals">🦁 Animals & Wildlife</option>
+                    </select>
+                </div>
+
+                <!-- Host Controls -->
+                <div class="pt-2">
+                    <div id="hostStartNotice" class="hidden space-y-3">
+                        <button onclick="startGame()" class="w-full py-4 rounded-2xl font-bold bg-sage-600 hover:bg-sage-700 text-white gentle-shadow transition text-base">
+                            <i class="fa-solid fa-play mr-2"></i> START GAME
+                        </button>
+                    </div>
+                    <div id="waitingForHostNotice" class="hidden py-3 px-4 bg-white/60 rounded-2xl border border-sage-200 text-sage-600 text-xs font-semibold flex items-center justify-center gap-3">
+                        <i class="fa-solid fa-spinner fa-spin text-sage-500"></i>
+                        <span>Waiting for the host to start...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 3: GAMEPLAY -->
+        <div id="viewGame" class="hidden space-y-5">
+            <!-- Round Header -->
+            <div class="peaceful-card p-4 rounded-2xl flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-sage-100 border border-sage-200 text-sage-700 flex items-center justify-center font-bold text-base">
+                        <span id="gameRoundNum">1</span>
+                    </div>
+                    <div>
+                        <div class="text-[11px] text-sage-500 uppercase font-bold tracking-wider">Current Round</div>
+                        <div class="text-sm font-bold text-sage-900">Round <span id="gameRoundText">1</span> of 5</div>
+                    </div>
+                </div>
+                <button onclick="disbandAndAutoDelete()" class="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-power-off"></i> End Game
+                </button>
+            </div>
+
+            <!-- Secret Word Card -->
+            <div class="peaceful-card p-5 rounded-3xl text-center space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-sage-600 uppercase tracking-wider">Secret Card</span>
+                    <button onclick="toggleWordPeek()" class="text-xs font-bold text-sage-700 hover:text-sage-900 flex items-center gap-1.5">
+                        <i id="peekEyeIcon" class="fa-solid fa-eye-slash"></i> <span id="peekBtnText">Reveal</span>
+                    </button>
+                </div>
+
+                <div id="secretCardBox" class="py-6 px-4 inner-inset rounded-2xl cursor-pointer transition" onclick="toggleWordPeek()">
+                    <!-- Hidden Card -->
+                    <div id="cardHiddenState" class="space-y-1">
+                        <div class="text-2xl">🌱</div>
+                        <div class="text-sm font-bold text-sage-700">Tap to View Your Secret Card</div>
+                        <div class="text-[11px] text-sage-500">Keep it hidden from others on your call</div>
+                    </div>
+
+                    <!-- Revealed Card -->
+                    <div id="cardRevealedState" class="hidden space-y-1">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speaker Turn & 30s Countdown -->
+            <div class="peaceful-card p-6 rounded-3xl text-center space-y-5">
+                <div>
+                    <span class="text-xs font-bold text-sage-500 uppercase tracking-widest">Speaking on WhatsApp Call</span>
+                    <h3 id="activePlayerName" class="text-2xl sm:text-3xl font-black text-sage-900 mt-0.5">Player Name</h3>
+                </div>
+
+                <!-- Peaceful 30s Circular Progress Timer -->
+                <div class="relative w-36 h-36 mx-auto flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="40" stroke="currentColor" stroke-width="6" class="text-sage-100" fill="transparent" />
+                        <circle id="timerProgressRing" cx="50" cy="50" r="40" stroke="currentColor" stroke-width="6" 
+                            stroke-dasharray="251.32" stroke-dashoffset="0" stroke-linecap="round"
+                            class="text-sage-500 transition-all duration-1000 ease-linear" fill="transparent" />
+                    </svg>
+                    <div class="absolute flex flex-col items-center justify-center">
+                        <span id="timerSecondsText" class="text-4xl font-black font-mono text-sage-900">30</span>
+                        <span class="text-[10px] uppercase tracking-widest text-sage-500 font-bold">Seconds</span>
+                    </div>
+                </div>
+
+                <!-- Timer Controls -->
+                <div class="space-y-2.5">
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="startTimer()" id="btnStartTimer" class="py-3 px-4 rounded-2xl font-bold bg-sage-600 hover:bg-sage-700 text-white shadow-sm transition flex items-center justify-center gap-2 text-xs sm:text-sm">
+                            <i class="fa-solid fa-play"></i> Start 30s
+                        </button>
+                        <button onclick="resetTimer()" class="py-3 px-4 rounded-2xl font-bold bg-white/80 hover:bg-white text-sage-700 border border-sage-200 transition flex items-center justify-center gap-2 text-xs sm:text-sm">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+
+                    <button onclick="nextTurn()" id="btnNextTurn" class="w-full py-3.5 rounded-2xl font-extrabold bg-sand-500 hover:bg-sand-600 text-white shadow-sm transition flex items-center justify-center gap-2 text-sm">
+                        <span>Pass To Next Player</span> <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 4: REVEAL SCREEN -->
+        <div id="viewReveal" class="hidden space-y-6 text-center">
+            <div class="peaceful-card p-6 sm:p-8 rounded-3xl space-y-6">
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-coral-500 uppercase tracking-widest">5 Rounds Completed</span>
+                    <h2 class="text-3xl font-black text-sage-900">Time to Vote!</h2>
+                    <p class="text-sage-600 text-xs sm:text-sm">Discuss over your WhatsApp call and cast your verbal votes!</p>
+                </div>
+
+                <!-- Reveal Card -->
+                <div id="impostorRevealBox" class="p-6 inner-inset rounded-2xl space-y-4">
+                    <div id="revealMaskState" class="space-y-3">
+                        <div class="text-3xl">🕵️‍♀️</div>
+                        <div class="text-sm font-bold text-sage-800">Ready to unmask the traitor?</div>
+                        <button onclick="triggerReveal()" id="btnRevealImpostor" class="py-3 px-6 rounded-2xl font-black bg-coral-500 hover:bg-coral-600 text-white shadow-md transition text-xs uppercase tracking-wider">
+                            <i class="fa-solid fa-mask mr-1.5"></i> REVEAL IMPOSTOR
+                        </button>
+                    </div>
+
+                    <div id="revealUnmaskedState" class="hidden space-y-3">
+                        <div class="text-xs uppercase font-bold text-sage-500 tracking-wider">The Impostor Was</div>
+                        <div id="revealedImpostorName" class="text-3xl font-black text-coral-500 py-1">--</div>
+                        
+                        <div class="pt-3 border-t border-sage-200">
+                            <span class="text-xs font-bold text-sage-500 uppercase tracking-wider">Common Word Was</span>
+                            <div id="revealedSecretWord" class="text-2xl font-black text-sage-800 mt-0.5">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Host End/Play Again Controls -->
+                <div id="hostPlayAgainNotice" class="hidden space-y-3">
+                    <button onclick="playNextGame()" class="w-full py-3.5 rounded-2xl font-bold bg-sage-600 hover:bg-sage-700 text-white shadow-md transition text-sm">
+                        <i class="fa-solid fa-rotate-right mr-2"></i> Play Next Round (New Word)
+                    </button>
+                    <button onclick="disbandAndAutoDelete()" class="w-full py-3 px-4 rounded-2xl font-bold bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 transition text-xs">
+                        <i class="fa-solid fa-trash-can mr-1.5"></i> End & Auto-Delete Cloud Storage
+                    </button>
+                </div>
+                <div id="nonHostPlayAgainNotice" class="hidden py-3 px-4 bg-white/60 rounded-2xl border border-sage-200 text-sage-600 text-xs font-semibold">
+                    Waiting for the host to restart or end the room...
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full max-w-xl mx-auto py-3 text-center text-xs text-sage-500">
+        <p>Zero text boxes • Simple, peaceful, and synced for group calls</p>
+    </footer>
+
+    <!-- Firebase SDK Logic & Engine -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let currentRoomId = null;
+        let roomUnsubscribe = null;
+        let isHost = false;
+        let timerInterval = null;
+        let audioCtx = null;
+
+        // SINGLE COMMON WORDS DATABASE (Each item is a single clean word/phrase)
+        const WORD_DATABASE = {
+            "Food": ["Pizza", "Sushi", "Pancakes", "Chocolate", "Popcorn", "Ice Cream", "Pasta", "Croissant", "Watermelon", "Burger"],
+            "Places": ["Eiffel Tower", "Hospital", "Airport", "Pyramids", "Cinema", "Library", "Supermarket", "Beach", "Space Station", "Gym"],
+            "Objects": ["Guitar", "Smartphone", "Headphones", "Camera", "Sunglasses", "Umbrella", "Bicycle", "Backpack", "Telescope", "Clock"],
+            "Animals": ["Penguin", "Elephant", "Kangaroo", "Dolphin", "Lion", "Giraffe", "Panda", "Owl", "Flamingo", "Tiger"],
+            "All": ["Astronaut", "Violin", "Photosynthesis", "Basketball", "Submarine", "Helicopter", "Waterfall", "Volcano", "Sculpture", "Rainbow"]
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'peaceful-impostor-game';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+            apiKey: "dummy-key",
+            authDomain: "dummy.firebaseapp.com",
+            projectId: "dummy-project"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        // Authenticate User
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    const userCred = await signInWithCustomToken(auth, __initial_auth_token);
+                    currentUser = userCred.user;
+                } else {
+                    const userCred = await signInAnonymously(auth);
+                    currentUser = userCred.user;
+                }
+            } catch (err) {
+                console.error("Auth error:", err);
+            }
+        }
+        initAuth();
+
+        // Soft Audio Beep Effects
+        function playPeacefulTone(freq = 440, duration = 0.1) {
+            try {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        // View Tabs Helper
+        window.showCreateRoomForm = () => {
+            document.getElementById('formCreate').classList.remove('hidden');
+            document.getElementById('formJoin').classList.add('hidden');
+            document.getElementById('tabCreateBtn').className = "py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-sage-600 text-white shadow-md transition flex items-center justify-center gap-2";
+            document.getElementById('tabJoinBtn').className = "py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-white/80 text-sage-700 border border-sage-200 transition flex items-center justify-center gap-2";
+        };
+
+        window.showJoinRoomForm = () => {
+            document.getElementById('formJoin').classList.remove('hidden');
+            document.getElementById('formCreate').classList.add('hidden');
+            document.getElementById('tabJoinBtn').className = "py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-sage-600 text-white shadow-md transition flex items-center justify-center gap-2";
+            document.getElementById('tabCreateBtn').className = "py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm bg-white/80 text-sage-700 border border-sage-200 transition flex items-center justify-center gap-2";
+        };
+
+        window.showAlert = (msg) => {
+            document.getElementById('alertMsg').innerText = msg;
+            document.getElementById('alertBox').classList.remove('hidden');
+            setTimeout(() => { window.hideAlert(); }, 4000);
+        };
+
+        window.hideAlert = () => {
+            document.getElementById('alertBox').classList.add('hidden');
+        };
+
+        function showView(viewId) {
+            ['viewLanding', 'viewLobby', 'viewGame', 'viewReveal'].forEach(v => {
+                document.getElementById(v).classList.add('hidden');
+            });
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function generateCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let res = '';
+            for (let i = 0; i < 4; i++) res += chars.charAt(Math.floor(Math.random() * chars.length));
+            return res;
+        }
+
+        window.createRoom = async () => {
+            const name = document.getElementById('playerNameInput').value.trim();
+            if (!name) return window.showAlert("Please enter your nickname first!");
+            if (!currentUser) await initAuth();
+
+            const roomCode = generateCode();
+            currentRoomId = roomCode;
+            isHost = true;
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomCode);
+            const initialData = {
+                code: roomCode,
+                hostId: currentUser.uid,
+                status: 'lobby',
+                category: 'All',
+                round: 1,
+                turnIndex: 0,
+                secretWord: '',
+                impostorId: '',
+                isRevealed: false,
+                timerActive: false,
+                timerStartTime: null,
+                players: [{ id: currentUser.uid, name: name, isHost: true }]
+            };
+
+            try {
+                await setDoc(roomRef, initialData);
+                listenToRoom(roomCode);
+            } catch (e) {
+                console.error(e);
+                window.showAlert("Failed to create room.");
+            }
+        };
+
+        window.joinRoom = async () => {
+            const name = document.getElementById('playerNameInput').value.trim();
+            const code = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+
+            if (!name) return window.showAlert("Please enter your nickname first!");
+            if (!code || code.length < 4) return window.showAlert("Enter a valid 4-letter room code!");
+            if (!currentUser) await initAuth();
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+            try {
+                const docSnap = await getDoc(roomRef);
+                if (!docSnap.exists()) return window.showAlert("Room not found!");
+
+                const data = docSnap.data();
+                if (data.status !== 'lobby') return window.showAlert("Game is already in progress!");
+
+                const existing = data.players || [];
+                if (!existing.some(p => p.id === currentUser.uid)) {
+                    existing.push({ id: currentUser.uid, name: name, isHost: false });
+                    await updateDoc(roomRef, { players: existing });
+                }
+
+                currentRoomId = code;
+                isHost = (data.hostId === currentUser.uid);
+                listenToRoom(code);
+            } catch (e) {
+                console.error(e);
+                window.showAlert("Could not join room.");
+            }
+        };
+
+        function listenToRoom(roomCode) {
+            if (roomUnsubscribe) roomUnsubscribe();
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', roomCode);
+            document.getElementById('connectionStatus').classList.remove('hidden');
+            document.getElementById('roomCodeDisplay').innerText = roomCode;
+
+            roomUnsubscribe = onSnapshot(roomRef, (snapshot) => {
+                if (!snapshot.exists()) {
+                    window.showAlert("Room has been closed & cleared from cloud.");
+                    resetLocalToHome();
+                    return;
+                }
+
+                const data = snapshot.data();
+                isHost = (data.hostId === currentUser.uid);
+                renderState(data);
+            }, (error) => {
+                console.error("Firestore listener error:", error);
+            });
+        }
+
+        function renderState(roomData) {
+            document.getElementById('lobbyRoomCode').innerText = roomData.code;
+            document.getElementById('playerCount').innerText = roomData.players ? roomData.players.length : 0;
+
+            const lobbyPlayersContainer = document.getElementById('lobbyPlayersList');
+            lobbyPlayersContainer.innerHTML = '';
+            (roomData.players || []).forEach(p => {
+                const item = document.createElement('div');
+                item.className = `p-3 rounded-2xl border font-bold text-xs flex items-center justify-between ${
+                    p.id === currentUser.uid ? 'bg-sage-100 border-sage-300 text-sage-900' : 'bg-white/80 border-sage-200 text-sage-800'
+                }`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-leaf ${p.isHost ? 'text-amber-500' : 'text-sage-400'}"></i>
+                        <span class="truncate max-w-[90px]">${escapeHtml(p.name)}</span>
+                    </div>
+                    ${p.isHost ? '<span class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-black">HOST</span>' : ''}
+                `;
+                lobbyPlayersContainer.appendChild(item);
+            });
+
+            if (isHost) {
+                document.getElementById('hostCategorySection').classList.remove('hidden');
+                document.getElementById('hostStartNotice').classList.remove('hidden');
+                document.getElementById('waitingForHostNotice').classList.add('hidden');
+                document.getElementById('hostPlayAgainNotice').classList.remove('hidden');
+                document.getElementById('nonHostPlayAgainNotice').classList.add('hidden');
+            } else {
+                document.getElementById('hostCategorySection').classList.add('hidden');
+                document.getElementById('hostStartNotice').classList.add('hidden');
+                document.getElementById('waitingForHostNotice').classList.remove('hidden');
+                document.getElementById('hostPlayAgainNotice').classList.add('hidden');
+                document.getElementById('nonHostPlayAgainNotice').classList.remove('hidden');
+            }
+
+            if (roomData.status === 'lobby') showView('viewLobby');
+            else if (roomData.status === 'playing') {
+                showView('viewGame');
+                renderGameplay(roomData);
+            } else if (roomData.status === 'reveal') {
+                showView('viewReveal');
+                renderRevealPhase(roomData);
+            }
+        }
+
+        // SINGLE COMMON WORD MECHANIC DISPLAY
+        function renderGameplay(roomData) {
+            document.getElementById('gameRoundNum').innerText = roomData.round;
+            document.getElementById('gameRoundText').innerText = roomData.round;
+
+            const isImpostor = (roomData.impostorId === currentUser.uid);
+            const cardBox = document.getElementById('cardRevealedState');
+            
+            if (isImpostor) {
+                cardBox.innerHTML = `
+                    <div class="text-3xl">🕵️‍♀️</div>
+                    <div class="text-xl font-black text-coral-600 tracking-tight">YOU ARE THE IMPOSTOR!</div>
+                    <div class="text-xs text-sage-600 font-medium max-w-xs mx-auto">
+                        You do not know the word. Listen carefully on call and pretend you know it!
+                    </div>
+                `;
+            } else {
+                cardBox.innerHTML = `
+                    <div class="text-xs font-bold text-sage-500 uppercase tracking-widest">Common Secret Word</div>
+                    <div class="text-3xl font-black text-sage-900 py-0.5 tracking-wide">${escapeHtml(roomData.secretWord)}</div>
+                    <div class="text-xs text-sage-600">Everyone shares this exact word except 1 Impostor!</div>
+                `;
+            }
+
+            const players = roomData.players || [];
+            const activePlayer = players[roomData.turnIndex % players.length] || { name: "Player" };
+            document.getElementById('activePlayerName').innerText = activePlayer.name;
+
+            handleTimerSync(roomData);
+        }
+
+        function handleTimerSync(roomData) {
+            if (timerInterval) clearInterval(timerInterval);
+
+            if (!roomData.timerActive || !roomData.timerStartTime) {
+                updateTimerDisplay(30);
+                return;
+            }
+
+            const elapsed = Math.floor((Date.now() - roomData.timerStartTime) / 1000);
+            const remaining = Math.max(0, 30 - elapsed);
+            updateTimerDisplay(remaining);
+
+            if (remaining > 0) {
+                timerInterval = setInterval(() => {
+                    const nowElapsed = Math.floor((Date.now() - roomData.timerStartTime) / 1000);
+                    const nowRemaining = Math.max(0, 30 - nowElapsed);
+                    updateTimerDisplay(nowRemaining);
+
+                    if (nowRemaining <= 3 && nowRemaining > 0) playPeacefulTone(520, 0.1);
+                    else if (nowRemaining === 0) {
+                        playPeacefulTone(780, 0.3);
+                        clearInterval(timerInterval);
+                    }
+                }, 1000);
+            }
+        }
+
+        function updateTimerDisplay(sec) {
+            document.getElementById('timerSecondsText').innerText = sec;
+            const ring = document.getElementById('timerProgressRing');
+            const circumference = 251.32;
+            const offset = circumference - (sec / 30) * circumference;
+            ring.style.strokeDashoffset = offset;
+
+            if (sec <= 5) ring.className = "text-coral-500 transition-all duration-1000 ease-linear";
+            else if (sec <= 12) ring.className = "text-amber-400 transition-all duration-1000 ease-linear";
+            else ring.className = "text-sage-500 transition-all duration-1000 ease-linear";
+        }
+
+        function renderRevealPhase(roomData) {
+            const players = roomData.players || [];
+            const impostor = players.find(p => p.id === roomData.impostorId) || { name: "Unknown" };
+
+            if (roomData.isRevealed) {
+                document.getElementById('revealMaskState').classList.add('hidden');
+                document.getElementById('revealUnmaskedState').classList.remove('hidden');
+                document.getElementById('revealedImpostorName').innerText = impostor.name;
+                document.getElementById('revealedSecretWord').innerText = roomData.secretWord;
+            } else {
+                document.getElementById('revealMaskState').classList.remove('hidden');
+                document.getElementById('revealUnmaskedState').classList.add('hidden');
+            }
+        }
+
+        window.startGame = async () => {
+            if (!isHost || !currentRoomId) return;
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            const docSnap = await getDoc(roomRef);
+            if (!docSnap.exists()) return;
+
+            const roomData = docSnap.data();
+            const players = roomData.players || [];
+            if (players.length < 2) return window.showAlert("You need at least 2 players!");
+
+            const selectedCat = document.getElementById('categorySelect').value;
+            const wordPool = WORD_DATABASE[selectedCat] || WORD_DATABASE['All'];
+            const randomWord = wordPool[Math.floor(Math.random() * wordPool.length)];
+
+            const randomImpostorIdx = Math.floor(Math.random() * players.length);
+            const impostorId = players[randomImpostorIdx].id;
+
+            await updateDoc(roomRef, {
+                status: 'playing',
+                round: 1,
+                turnIndex: 0,
+                secretWord: randomWord,
+                impostorId: impostorId,
+                isRevealed: false,
+                timerActive: false,
+                timerStartTime: null
+            });
+        };
+
+        window.toggleWordPeek = () => {
+            const hiddenBox = document.getElementById('cardHiddenState');
+            const revealedBox = document.getElementById('cardRevealedState');
+            const peekText = document.getElementById('peekBtnText');
+            const peekIcon = document.getElementById('peekEyeIcon');
+
+            if (hiddenBox.classList.contains('hidden')) {
+                hiddenBox.classList.remove('hidden');
+                revealedBox.classList.add('hidden');
+                peekText.innerText = "Reveal";
+                peekIcon.className = "fa-solid fa-eye-slash";
+            } else {
+                hiddenBox.classList.add('hidden');
+                revealedBox.classList.remove('hidden');
+                peekText.innerText = "Hide";
+                peekIcon.className = "fa-solid fa-eye";
+            }
+        };
+
+        window.startTimer = async () => {
+            if (!currentRoomId) return;
+            playPeacefulTone(500, 0.1);
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            await updateDoc(roomRef, { timerActive: true, timerStartTime: Date.now() });
+        };
+
+        window.resetTimer = async () => {
+            if (!currentRoomId) return;
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            await updateDoc(roomRef, { timerActive: false, timerStartTime: null });
+        };
+
+        window.nextTurn = async () => {
+            if (!currentRoomId) return;
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            const docSnap = await getDoc(roomRef);
+            if (!docSnap.exists()) return;
+
+            const roomData = docSnap.data();
+            const players = roomData.players || [];
+            const nextIndex = roomData.turnIndex + 1;
+
+            if (nextIndex % players.length === 0) {
+                const nextRound = roomData.round + 1;
+                if (nextRound > 5) {
+                    await updateDoc(roomRef, { status: 'reveal', timerActive: false, timerStartTime: null });
+                } else {
+                    await updateDoc(roomRef, { round: nextRound, turnIndex: nextIndex, timerActive: false, timerStartTime: null });
+                }
+            } else {
+                await updateDoc(roomRef, { turnIndex: nextIndex, timerActive: false, timerStartTime: null });
+            }
+        };
+
+        window.triggerReveal = async () => {
+            if (!currentRoomId) return;
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            await updateDoc(roomRef, { isRevealed: true });
+        };
+
+        window.playNextGame = async () => {
+            if (!isHost || !currentRoomId) return;
+
+            const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+            const docSnap = await getDoc(roomRef);
+            if (!docSnap.exists()) return;
+
+            const roomData = docSnap.data();
+            const players = roomData.players || [];
+
+            const wordPool = WORD_DATABASE['All'];
+            const randomWord = wordPool[Math.floor(Math.random() * wordPool.length)];
+            const randomImpostorIdx = Math.floor(Math.random() * players.length);
+            const impostorId = players[randomImpostorIdx].id;
+
+            await updateDoc(roomRef, {
+                status: 'playing',
+                round: 1,
+                turnIndex: 0,
+                secretWord: randomWord,
+                impostorId: impostorId,
+                isRevealed: false,
+                timerActive: false,
+                timerStartTime: null
+            });
+        };
+
+        // AUTO-DELETE & DISBAND IMPLEMENTATION
+        window.disbandAndAutoDelete = async () => {
+            if (!currentRoomId) return;
+            try {
+                const roomRef = doc(db, 'artifacts', appId, 'public', 'data', 'rooms', currentRoomId);
+                await deleteDoc(roomRef);
+                window.showAlert("Game session ended and auto-deleted from cloud storage.");
+            } catch (err) {
+                console.error("Error auto-deleting room:", err);
+            }
+            resetLocalToHome();
+        };
+
+        window.confirmResetToHome = () => {
+            if (currentRoomId && isHost) {
+                window.disbandAndAutoDelete();
+            } else {
+                resetLocalToHome();
+            }
+        };
+
+        function resetLocalToHome() {
+            if (roomUnsubscribe) roomUnsubscribe();
+            currentRoomId = null;
+            document.getElementById('connectionStatus').classList.add('hidden');
+            showView('viewLanding');
+        }
+
+        window.copyRoomCode = () => {
+            const code = document.getElementById('lobbyRoomCode').innerText;
+            if (!code || code === '----') return;
+            const temp = document.createElement('input');
+            temp.value = code;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            window.showAlert(`Room code ${code} copied!`);
+        };
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+    </script>
+</body>
+</html>
